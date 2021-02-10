@@ -55,7 +55,7 @@ class MiLedDesklamp {
 
         this.listenLampState().catch(error => this.log.error(error))
         
-        this.adaptiveLightingController = new api.hap.AdaptiveLightingController(lamp);
+        this.adaptiveLightingController = new api.hap.AdaptiveLightingController(this.lamp);
     }
 
     async getLamp() {
