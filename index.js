@@ -9,6 +9,8 @@ module.exports = function (homebridge) {
     Service = homebridge.hap.Service
     Characteristic = homebridge.hap.Characteristic
 
+    api = homebridge;
+    
     homebridge.registerAccessory("homebridge-mi-led-desk-lamp", "mi-led-desk-lamp", MiLedDesklamp)
 }
 
