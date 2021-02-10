@@ -27,7 +27,7 @@ class MiLedDesklamp {
             return
         }
         if (!config['cachetime']) {
-            this.log('No token defined for', this.name)
+            this.log('No cache time defined for', this.name)
             return
         }
         
@@ -35,7 +35,7 @@ class MiLedDesklamp {
         this.token = config['token']
         this.cacheTime = config['cachetime']
         
-        this.brightnessCache = new Cache(cacheTime, 0);
+        this.brightnessCache = new Cache(this.cacheTime, 0);
 
         // Setup services
         this.lamp = new Service.Lightbulb(this.name)
