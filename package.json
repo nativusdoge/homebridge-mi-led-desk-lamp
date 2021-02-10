@@ -1,6 +1,6 @@
 {
   "name": "homebridge-mi-led-desk-lamp",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "",
   "main": "index.js",
   "keywords": [
@@ -10,10 +10,11 @@
   "license": "ISC",
   "engines": {
     "node": ">=0.12.0",
-    "homebridge": ">=0.2.0"
+    "homebridge": ">=0.4.8"
   },
-  "homepage": "https://github.com/moifort/homebridge-mi-led-desk-lamp/blob/master/README.md",
+  "homepage": "https://github.com/nativusdoge/homebridge-mi-led-desk-lamp/blob/master/README.md",
   "dependencies": {
-    "miio": "^0.15.6"
+    "miio": "^0.15.6",
+    "homebridge-http-base": "~2.1.9"
   }
 }

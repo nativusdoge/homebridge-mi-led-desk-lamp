@@ -1,5 +1,9 @@
 const miio = require('miio')
-let Service, Characteristic
+let Service, Characteristic, api;
+
+const _http_base = require("homebridge-http-base");
+const http = _http_base.http;
+const Cache = _http_base.Cache;
 
 module.exports = function (homebridge) {
     Service = homebridge.hap.Service
@@ -15,15 +19,23 @@ class MiLedDesklamp {
         this.log = log
         this.name = config['name'] || 'Mi desk lamp'
         if (!config['ip']) {
-            this.log('No IP address define for', this.name)
+            this.log('No IP address defined for', this.name)
             return
         }
         if (!config['token']) {
-            this.log('No token define for', this.name)
+            this.log('No token defined for', this.name)
             return
         }
+        if (!config['cachetime']) {
+            this.log('No token defined for', this.name)
+            return
+        }
+        
         this.ip = config['ip']
         this.token = config['token']
+        this.cacheTime = config['cachetime']
+        
+        this.brightnessCache = new Cache(cacheTime, 0);
 
         // Setup services
         this.lamp = new Service.Lightbulb(this.name)
@@ -40,6 +52,8 @@ class MiLedDesklamp {
             .on('set', this.setColorTemperature.bind(this))
 
         this.listenLampState().catch(error => this.log.error(error))
+        
+        this.adaptiveLightingController = new api.hap.AdaptiveLightingController(lamp);
     }
 
     async getLamp() {
@@ -87,27 +101,39 @@ class MiLedDesklamp {
 
     async getBrightness(callback) {
         this.log('Get brightness...')
+        
+        if (!this.brightnessCache.shouldQuery()) {
+            const value = this.lamp.getCharacteristic(Characteristic.Brightness).value;
+            if (this.debug)
+                this.log(`getBrightness() returning cached value '${value}'${this.brightnessCache.isInfinite()? " (infinite cache)": ""}`);
+
+            callback(null, value);
+            return;
+        }
+        
         try {
             const device = await this.getLamp()
             const brightness = await device.brightness()
+            this.brightnessCache.queried();
             callback(null, brightness)
         } catch (e) {
             this.log.error('Error getting brightness', e)
             callback(e)
         }
     }
-	async setBrightness(state, callback) {
-		this.log('Set brightness to', state)
-		try {
-			const device = await this.getLamp()
-			await device.brightness('' + state)
-			callback(null)
-		} catch (e) {
-			this.log.error('Error setting brightness', e)
-			callback(e)
-		}
+
+    async setBrightness(state, callback) {
+	this.log('Set brightness to', state)
+	try {
+            const device = await this.getLamp()
+            await device.brightness('' + state)
+            callback(null)
+	} catch (e) {
+            this.log.error('Error setting brightness', e)
+            callback(e)
+        }
     }
-    
+
     async getColorTemperature(callback) {
         this.log('Get color...')
         try {
@@ -120,23 +146,32 @@ class MiLedDesklamp {
             callback(e)
         }
     }
-	async setColorTemperature(miredValue, callback) {
+
+    async setColorTemperature(miredValue, callback) {
         this.log('Set color to', miredValue)
         let kelvinValue = Math.round(1000000 / miredValue)
 
         kelvinValue = Math.max(Math.min(kelvinValue, 6500), 2700);
 
-		try {
+	try {
             const device = await this.getLamp()
             await device.call("set_ct_abx", [kelvinValue, 'smooth', 1000])
-			callback(null)
-		} catch (e) {
-			this.log.error('Error setting color', e)
-			callback(e)
-		}
+            callback(null)
+	} catch (e) {
+	    this.log.error('Error setting color', e)
+	    callback(e)
 	}
+    }
 
     getServices() {
         return [this.lamp]
+    }
+    
+    getControllers: function () {
+      if (!this.adaptiveLightingController) {
+          return [];
+      } else {
+          return [this.adaptiveLightingController];
+      }
     }
 }
