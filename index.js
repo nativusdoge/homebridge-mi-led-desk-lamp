@@ -19,6 +19,9 @@ class MiLedDesklamp {
     constructor(log, config) {
         // Setup configuration
         this.log = log
+        
+        this.adaptiveLightingSupport = this.checkAdaptiveLightingSupport()
+        
         this.name = config['name'] || 'Mi desk lamp'
         if (!config['ip']) {
             this.log('No IP address defined for', this.name)
@@ -37,7 +40,7 @@ class MiLedDesklamp {
         this.token = config['token']
         this.cacheTime = config['cachetime']
         
-        this.brightnessCache = new Cache(this.cacheTime, 0);
+        this.brightnessCache = new Cache(this.cacheTime, 0)
 
         // Setup services
         this.lamp = new Service.Lightbulb(this.name)
@@ -55,7 +58,9 @@ class MiLedDesklamp {
 
         this.listenLampState().catch(error => this.log.error(error))
         
-        this.adaptiveLightingController = new api.hap.AdaptiveLightingController(this.lamp);
+        if (this.adaptiveLightingSupport) {
+            this.adaptiveLightingController = new api.hap.AdaptiveLightingController(this.lamp)
+    	}
     }
 
     async getLamp() {
@@ -175,5 +180,10 @@ class MiLedDesklamp {
       } else {
           return [this.adaptiveLightingController];
       }
+    }
+    
+    checkAdaptiveLightingSupport() {
+        return api.version >= 2.7 && api.versionGreaterOrEqual("1.3.0-beta.19")
+            || !!api.hap.AdaptiveLightingController; // support check on Hoobs
     }
 }
