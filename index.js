@@ -167,7 +167,7 @@ class MiLedDesklamp {
         return [this.lamp]
     }
     
-    getControllers: function () {
+    getControllers() {
       if (!this.adaptiveLightingController) {
           return [];
       } else {
