@@ -33,7 +33,6 @@ class MiLedDesklamp {
         }
         if (!config['cachetime']) {
             this.log('No cache time defined for', this.name)
-            return
         }
         
         this.ip = config['ip']
@@ -41,6 +40,8 @@ class MiLedDesklamp {
         this.cacheTime = config['cachetime']
         
         this.brightnessCache = new Cache(this.cacheTime, 0)
+        this.colorTemperatureCache = new Cache(this.cacheTime, 0)
+        this.stateCache = new Cache(this.cacheTime, 0)
 
         // Setup services
         this.lamp = new Service.Lightbulb(this.name)
@@ -84,9 +85,19 @@ class MiLedDesklamp {
 
     async getState(callback) {
         this.log('Get state...')
+        
+        if (!this.stateCache.shouldQuery()) {
+            const value = this.lamp.getCharacteristic(Characteristic.On).value;
+            this.log(`getState() returning cached value '${value}'${this.stateCache.isInfinite()? " (infinite cache)": ""}`);
+
+            callback(null, value);
+            return;
+        }
+        
         try {
             const device = await this.getLamp()
             const power = await device.power()
+            this.stateCache.queried();
             callback(null, power)
         } catch (e) {
             this.log.error('Error getting state', e)
@@ -111,8 +122,7 @@ class MiLedDesklamp {
         
         if (!this.brightnessCache.shouldQuery()) {
             const value = this.lamp.getCharacteristic(Characteristic.Brightness).value;
-            if (this.debug)
-                this.log(`getBrightness() returning cached value '${value}'${this.brightnessCache.isInfinite()? " (infinite cache)": ""}`);
+            this.log(`getBrightness() returning cached value '${value}'${this.brightnessCache.isInfinite()? " (infinite cache)": ""}`);
 
             callback(null, value);
             return;
@@ -143,10 +153,20 @@ class MiLedDesklamp {
 
     async getColorTemperature(callback) {
         this.log('Get color...')
+        
+        if (!this.colorTemperatureCache.shouldQuery()) {
+            const value = this.lamp.getCharacteristic(Characteristic.ColorTemperature).value;
+            this.log(`getColorTemperature() returning cached value '${value}'${this.colorTemperatureCache.isInfinite()? " (infinite cache)": ""}`);
+
+            callback(null, value);
+            return;
+        }
+        
         try {
             const device = await this.getLamp()
             const color = await device.color()
             const miredColor = Math.round(1000000 / color.values[0])
+            this.colorTemperatureCache.queried();
             callback(null, miredColor)
         } catch (e) {
             this.log.error('Error getting brightness', e)
